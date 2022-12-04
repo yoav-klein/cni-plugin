@@ -8,12 +8,12 @@ test_add() {
     derived=$(echo $config | jq '. += .plugins[0] | del(.plugins)')
     
     # create אthe red namespace
-    sudo ip netns add red
+    sudo ip netns | grep "red" || sudo ip netns add red
 
     export CNI_COMMAND=ADD
     export CNI_NETNS=/var/run/netns/red
     export CNI_CONTAINERID="mynewcontainer"
-    export CNI_IFNAME="eth0"
+    export CNI_IFNAME="veth0"
 
     echo $derived | sudo -E ./my-cni-plugin
 }
