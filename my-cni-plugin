@@ -1,0 +1,64 @@
+#!/bin/bash
+
+config=$(cat /dev/stdin)
+
+add() {
+    pod_cidr=$(echo $config | jq -r '.podCidr')
+    # check if bridge exists, if not - create it
+    bridge_name="cni-bridge"
+    ip link show "$bridge_name" > /dev/null 2>&1  || ip link add "$bridge_name" type bridge
+    
+    # assign IP to the bridge, and set it up
+    pod_cidr_gw=$(echo $pod_cidr | sed "s:0/24:1:g")
+    ip addr add dev $bridge_name "$pod_cidr_gw/24"
+    ip link set dev "$bridge_name" up
+    
+    # calculate next IP for the container
+    if [ -f /tmp/ip_count_file ];
+        last_ip=$(cat /tmp/ip_count_file)
+    else
+        last_ip=1
+    fi
+
+    n=$((last_ip + 1))
+    # create a veth pair
+    host_if_name="veth$n"
+    next_ip=$(echo $pod_cidr | sed "s:0/24:$n/24:g")
+
+    # create a veth pair
+    ip link add $host_if_name type veth peer name $CNI_IFNAME
+    ip link set $host_if_name up
+
+    # set the CNI_IFNAME interface in the namespace, and bring it up
+    mkdir -p /var/run/netns
+    ln -sfT $CNI_NETNS /var/run/netns/$CNI_CONTAINERID
+    ip link set $CNI_IFNAME netns $CNI_CONTAINERID 
+    
+    ip netns exec $CNI_CONTAINERID ip link set $CNI_IFNAME up
+    ip netns exec $CNI_CONTAINERID ip addr add dev $CNI_IFNAME $next_ip
+    ip netns exec $CNI_CONTIANERID ip route add default via $pod_cidr_gw   
+    mac=$(ip netns exec $CNI_CONTAINERID ip link show eth0 | awk '/ether/ {print $2}')
+
+    # bring up the interface
+    # set route in the namespace
+}
+
+del() {
+    echo "Deling"
+}
+
+check() {
+    echo "Checing"
+}
+
+version() {
+    echo "0.1"
+}
+
+
+case "$CNI_COMMAND" in
+ADD) add ;;
+DEL) del ;;
+CHECK) check ;;
+VERSION) version ;;
+esac

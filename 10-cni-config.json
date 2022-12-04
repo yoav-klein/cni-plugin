@@ -1,0 +1,11 @@
+{
+    "name": "my-cni",
+    "cnVersion": "1.0.0",
+    "plugins": [
+        {
+            "type": "my-cni-plugin",
+            "podCidr": "10.240.0.0/24"
+        }
+    ]
+}
+
