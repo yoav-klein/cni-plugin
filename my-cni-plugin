@@ -78,7 +78,7 @@ add() {
 }
 
 del() {
-    echo "Deling"
+    rm -rf /var/run/netns/$CNI_CONTAINERID
 }
 
 check() {
