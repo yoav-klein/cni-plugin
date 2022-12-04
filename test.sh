@@ -17,7 +17,7 @@ containers='
 
 clean() {
     local containers_parsed=$(echo $containers | jq -c '.[]')
-    for container in $container_parsed; do
+    for container in $containers_parsed; do
         ns_name=$(echo $container | jq -r ".ns_name")
         sudo ip netns delete "$ns_name"
     done
