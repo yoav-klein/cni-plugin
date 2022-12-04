@@ -6,8 +6,16 @@ test_add() {
     echo "=== Testing add"
     config=$(cat 10-cni-config.json)
     derived=$(echo $config | jq '. += .plugins[0] | del(.plugins)')
+    
+    # create אthe red namespace
+    sudo ip netns add red
 
-    echo $derived | sudo CNI_COMMAND=ADD ./my-cni-plugin
+    export CNI_COMMAND=ADD
+    export CNI_NETNS=/var/run/netns/red
+    export CNI_CONTAINERID="mynewcontainer"
+    export CNI_IFNAME="eth0"
+
+    echo $derived | sudo -E ./my-cni-plugin
 }
 
 
