@@ -10,7 +10,7 @@ add() {
     
     # assign IP to the bridge, and set it up
     pod_cidr_gw=$(echo $pod_cidr | sed "s:0/24:1:g")
-    ip addr add dev $bridge_name "$pod_cidr_gw/24"
+    ifconfig $bridge_name | grep inet >/dev/null || ip addr add dev $bridge_name "$pod_cidr_gw/24"
     ip link set dev "$bridge_name" up
     
     # calculate next IP for the container
