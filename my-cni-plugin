@@ -37,10 +37,36 @@ add() {
     ip netns exec $CNI_CONTAINERID ip link set $CNI_IFNAME up
     ip netns exec $CNI_CONTAINERID ip addr add dev $CNI_IFNAME $next_ip
     ip netns exec $CNI_CONTIANERID ip route add default via $pod_cidr_gw   
+    
     mac=$(ip netns exec $CNI_CONTAINERID ip link show eth0 | awk '/ether/ {print $2}')
 
-    # bring up the interface
-    # set route in the namespace
+    output_template='
+{
+    "cniVersion": "1.0.0",
+    "interfaces": [
+    {
+        "name": "%s",
+        "mac": "%s",
+        "sandbox": "%s"
+    }
+    ],
+    "ips": [
+    {
+        "address": "%s",
+        "gateway": "%s",
+        "interface": 0
+    }
+    ],
+    "routes": [
+    {
+        "dst": "0.0.0.0/0"
+    }
+    ]
+}
+'
+    output=$(printf "$output_template" $CNI_IFNAME, $mac, $CNI_NETNS, $next_ip, $pod_cidr_gw)
+
+    echo "$output"
 }
 
 del() {
