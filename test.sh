@@ -1,28 +1,50 @@
 #!/bin/bash
 
-ns_name="blue"
-cntainer_id="mynewcontainer"
-if_name="veth0"
+containers='
+[
+{
+    "ns_name": "blue",
+    "container_id": "milky_road",
+    "if_name": "veth0"
+},
+{
+    "ns_name": "red",
+    "cotainer_id": "little_bastard",
+    "if_name": "veth0"
+}
+]
+'
 
 clean() {
-    sudo ip netns delete "$ns_name"
+    local containers_parsed=$(echo $containers | jq -c '.[]')
+    for container in $container_parsed; do
+        ns_name=$(echo $container | jq -r ".ns_name")
+        sudo ip netns delete "$ns_name"
+    done
+    
     sudo rm -rf /var/run/netns/*
 }
 
 test_add() {
-    echo "=== Testing add"
     config=$(cat 10-cni-config.json)
     derived=$(echo $config | jq '. += .plugins[0] | del(.plugins)')
     
-    # create אthe red namespace
-    sudo ip netns | grep "$ns_name" || sudo ip netns add "$ns_name"
+    local containers_parsed=$(echo $containers | jq -c '.[]')
+    
+    for container in $containers_parsed; do
+        ns_name=$(echo $container | jq -r ".ns_name")
+        CNI_CONTAINERID=$(echo $container | jq -r ".container_id")
+        CNI_IFNAME=$(echo $container | jq -r ".if_name")
 
-    export CNI_COMMAND=ADD
-    export CNI_NETNS="/var/run/netns/$ns_name"
-    export CNI_CONTAINERID="$container_id"
-    export CNI_IFNAME="$if_name"
+        sudo ip netns | grep "$ns_name" || sudo ip netns add "$ns_name"
+        export CNI_COMMAND=ADD
+        export CNI_NETNS="/var/run/netns/$ns_name"
+        export CNI_CONTAINERID
+        export CNI_IFNAME
 
-    echo $derived | sudo -E ./my-cni-plugin
+        echo $derived | sudo -E ./my-cni-plugin
+    done
+
 }
 
 
