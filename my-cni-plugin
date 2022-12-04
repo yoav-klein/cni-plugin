@@ -3,21 +3,21 @@
 config=$(cat /dev/stdin)
 log=cni.log
 
-cni_version=$(echo $config | jq -ר '.cniVersion')
+cni_version=$(echo $config | jq -r '.cniVersion')
 
 error() {
     local code=$1
     local msg=$2
     local details=$3
-    local template=' 
+    local template="
 {
     "cniVersion": "$cni_version",
     "code": "$code",
     "msg": "$msg",
     "details": "$details"
 }
-'
-    printf "$template" >&2
+"
+    echo "$template" >&2
     exit 1
 
 }
@@ -31,7 +31,7 @@ add() {
     ln -sfT $CNI_NETNS /var/run/netns/$CNI_CONTAINERID
     
     # check if the interface already exists in the container, if does - return an error
-    ip netns exec $CNI_CONTAINERID ip link show $CNI_IFNAME && error 13 "Interface alredy exists" "Interface already exists"
+    ip netns exec $CNI_CONTAINERID ip link show $CNI_IFNAME 2>/dev/null && error 13 "Interface alredy exists" "Interface already exists"
 
     # check if bridge exists, if not - create it
     bridge_name="cni-bridge"
@@ -49,7 +49,7 @@ add() {
     else
         last_ip=1
     fi
-    echo $last_ip > /tmp/ip_count_file
+    echo $((last_ip + 1)) > /tmp/ip_count_file
     n=$((last_ip + 1))
 
     # create a veth pair
@@ -74,7 +74,7 @@ add() {
     echo "MAC: $mac" >> $log
     output_template='
 {
-    "cniVersion": "$cni_version",
+    "cniVersion": "%s",
     "interfaces": [
     {
         "name": "%s",
@@ -96,7 +96,7 @@ add() {
     ]
 }
 '
-    output=$(printf "$output_template" $CNI_IFNAME $mac $CNI_NETNS $next_ip $pod_cidr_gw)
+    output=$(printf "$output_template" $cni_version $CNI_IFNAME $mac $CNI_NETNS $next_ip $pod_cidr_gw)
 
     echo "$output"
 }
