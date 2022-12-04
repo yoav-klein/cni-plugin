@@ -14,7 +14,7 @@ add() {
     ip link set dev "$bridge_name" up
     
     # calculate next IP for the container
-    if [ -f /tmp/ip_count_file ];
+    if [ -f /tmp/ip_count_file ]; then
         last_ip=$(cat /tmp/ip_count_file)
     else
         last_ip=1
