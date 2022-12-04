@@ -11,7 +11,7 @@ add() {
     
     # assign IP to the bridge, and set it up
     pod_cidr_gw=$(echo $pod_cidr | sed "s:0/24:1:g")
-    echo "Pod CIDR gateway: $pod_cidr_gw" >> $log
+    echo "Pod CIDR gateway: $pod_cidr_gw" > $log
 
     # check if bridge IP is set, if not - set it, and bring it up
     ifconfig $bridge_name | grep inet >/dev/null || ip addr add dev $bridge_name "$pod_cidr_gw/24"
@@ -37,16 +37,17 @@ add() {
     ip link set $host_if_name up
 
     # set the CNI_IFNAME interface in the namespace, and bring it up
-     mkdir -p /var/run/netns
-#    ln -sfT $CNI_NETNS /var/run/netns/$CNI_CONTAINERID
-#    ip link set $CNI_IFNAME netns $CNI_CONTAINERID 
+    mkdir -p /var/run/netns
+    ln -sfT $CNI_NETNS /var/run/netns/$CNI_CONTAINERID
+    ip link set $CNI_IFNAME netns $CNI_CONTAINERID 
     
-#    ip netns exec $CNI_CONTAINERID ip link set $CNI_IFNAME up
-#    ip netns exec $CNI_CONTAINERID ip addr add dev $CNI_IFNAME $next_ip
-#    ip netns exec $CNI_CONTIANERID ip route add default via $pod_cidr_gw   
+    ip netns exec $CNI_CONTAINERID ip link set $CNI_IFNAME up
+    ip netns exec $CNI_CONTAINERID ip addr add dev $CNI_IFNAME $next_ip
+    ip netns exec $CNI_CONTIANERID ip route add default via $pod_cidr_gw   
     
-#    mac=$(ip netns exec $CNI_CONTAINERID ip link show eth0 | awk '/ether/ {print $2}')
-
+    mac=$(ip netns exec $CNI_CONTAINERID ip link show $CNI_IFNAME | awk '/ether/ {print $2}')
+    
+    echo "MAC: $mac" >> $log
     output_template='
 {
     "cniVersion": "1.0.0",
@@ -71,7 +72,7 @@ add() {
     ]
 }
 '
-    output=$(printf "$output_template" $CNI_IFNAME, $mac, $CNI_NETNS, $next_ip, $pod_cidr_gw)
+    output=$(printf "$output_template" $CNI_IFNAME $mac $CNI_NETNS $next_ip $pod_cidr_gw)
 
     echo "$output"
 }
