@@ -43,7 +43,7 @@ add() {
     
     ip netns exec $CNI_CONTAINERID ip link set $CNI_IFNAME up
     ip netns exec $CNI_CONTAINERID ip addr add dev $CNI_IFNAME $next_ip
-    ip netns exec $CNI_CONTIANERID ip route add default via $pod_cidr_gw   
+    ip netns exec $CNI_CONTAINERID ip route add default via $pod_cidr_gw   
     
     mac=$(ip netns exec $CNI_CONTAINERID ip link show $CNI_IFNAME | awk '/ether/ {print $2}')
     
