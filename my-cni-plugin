@@ -3,17 +3,43 @@
 config=$(cat /dev/stdin)
 log=cni.log
 
+cni_version=$(echo $config | jq -ר '.cniVersion')
+
+error() {
+    local code=$1
+    local msg=$2
+    local details=$3
+    local template=' 
+{
+    "cniVersion": "$cni_version",
+    "code": "$code",
+    "msg": "$msg",
+    "details": "$details"
+}
+'
+    printf "$template" >&2
+    exit 1
+
+}
+
 add() {
     pod_cidr=$(echo $config | jq -r '.podCidr')
+
+    # create a symlink from the netwokr namespace to the /var/run/netns filesystem
+    # so that we can manage it with ip netns command
+    mkdir -p /var/run/netns
+    ln -sfT $CNI_NETNS /var/run/netns/$CNI_CONTAINERID
+    
+    # check if the interface already exists in the container, if does - return an error
+    ip netns exec $CNI_CONTAINERID ip link show $CNI_IFNAME && error 13 "Interface alredy exists" "Interface already exists"
+
     # check if bridge exists, if not - create it
     bridge_name="cni-bridge"
     ip link show "$bridge_name" > /dev/null 2>&1  || ip link add "$bridge_name" type bridge
     
-    # assign IP to the bridge, and set it up
+    # check if bridge IP is assigned, if not - set it, and bring it up
     pod_cidr_gw=$(echo $pod_cidr | sed "s:0/24:1:g")
     echo "Pod CIDR gateway: $pod_cidr_gw" > $log
-
-    # check if bridge IP is set, if not - set it, and bring it up
     ifconfig $bridge_name | grep inet >/dev/null || ip addr add dev $bridge_name "$pod_cidr_gw/24"
     ip link set dev "$bridge_name" up
     
@@ -24,8 +50,8 @@ add() {
         last_ip=1
     fi
     echo $last_ip > /tmp/ip_count_file
-
     n=$((last_ip + 1))
+
     # create a veth pair
     host_if_name="veth$n"
     echo "Host interface name: $host_if_name" >> $log
@@ -37,8 +63,6 @@ add() {
     ip link set $host_if_name up
 
     # set the CNI_IFNAME interface in the namespace, and bring it up
-    mkdir -p /var/run/netns
-    ln -sfT $CNI_NETNS /var/run/netns/$CNI_CONTAINERID
     ip link set $CNI_IFNAME netns $CNI_CONTAINERID 
     
     ip netns exec $CNI_CONTAINERID ip link set $CNI_IFNAME up
@@ -50,7 +74,7 @@ add() {
     echo "MAC: $mac" >> $log
     output_template='
 {
-    "cniVersion": "1.0.0",
+    "cniVersion": "$cni_version",
     "interfaces": [
     {
         "name": "%s",
