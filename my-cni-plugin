@@ -62,6 +62,9 @@ add() {
     ip link add $CNI_IFNAME type veth peer name "$host_if_name"
     ip link set $host_if_name up
 
+    # plug the host end to the bridge
+    ip link set dev $host_if_name master $bridge_name
+
     # set the CNI_IFNAME interface in the namespace, and bring it up
     ip link set $CNI_IFNAME netns $CNI_CONTAINERID 
     
