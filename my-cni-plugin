@@ -49,8 +49,8 @@ add() {
     else
         last_ip=1
     fi
-    echo $((last_ip + 1)) > /tmp/ip_count_file
     n=$((last_ip + 1))
+    echo $n > /tmp/ip_count_file
 
     # create a veth pair
     host_if_name="veth$n"
@@ -58,16 +58,17 @@ add() {
     next_ip=$(echo $pod_cidr | sed "s:0/24:$n/24:g")
     echo "Next IP: $next_ip" >> $log
 
-    # create a veth pair
-    ip link add $CNI_IFNAME type veth peer name "$host_if_name"
+    # create a veth pair, name of interface is temporary, will be changed below
+    ip link add tmpif type veth peer name "$host_if_name"
     ip link set $host_if_name up
 
     # plug the host end to the bridge
     ip link set dev $host_if_name master $bridge_name
 
-    # set the CNI_IFNAME interface in the namespace, and bring it up
-    ip link set $CNI_IFNAME netns $CNI_CONTAINERID 
+    # set the CNI_IFNAME interface in the namespace, change its name, and bring it up
+    ip link set tmpif netns $CNI_CONTAINERID 
     
+    ip netns exec $CNI_CONTAINERID ip link set tmpif name $CNI_IFNAME
     ip netns exec $CNI_CONTAINERID ip link set $CNI_IFNAME up
     ip netns exec $CNI_CONTAINERID ip addr add dev $CNI_IFNAME $next_ip
     ip netns exec $CNI_CONTAINERID ip route add default via $pod_cidr_gw   

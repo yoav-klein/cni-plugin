@@ -5,12 +5,12 @@ containers='
 {
     "ns_name": "blue",
     "container_id": "milky_road",
-    "if_name": "veth0"
+    "if_name": "eth0"
 },
 {
     "ns_name": "red",
     "cotainer_id": "little_bastard",
-    "if_name": "veth0"
+    "if_name": "eth0"
 }
 ]
 '
