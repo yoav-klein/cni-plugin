@@ -1,6 +1,6 @@
 {
     "name": "my-cni",
-    "cnVersion": "1.0.0",
+    "cniVersion": "1.0.0",
     "plugins": [
         {
             "type": "my-cni-plugin",
