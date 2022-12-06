@@ -1,7 +1,7 @@
 #!/bin/bash
 
 config=$(cat /dev/stdin)
-log=cni.log
+log=/var/log/cni.log
 
 cni_version=$(echo $config | jq -r '.cniVersion')
 
