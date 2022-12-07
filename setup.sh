@@ -1,5 +1,6 @@
 #!/bin/bash
 
+sudo apt-get update
 sudo apt-get install jq
 
 sudo cp my-cni-plugin /opt/cni/bin
