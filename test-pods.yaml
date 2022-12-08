@@ -35,7 +35,7 @@ metadata:
 spec:
   containers:
   - name: echo
-    image: echo
+    image: yoavklein3/echo:0.1
     ports:
     - containerPort: 5000
   nodeName: worker2
