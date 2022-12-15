@@ -5,7 +5,7 @@
         {
             "name": "my-plugin",
             "type": "my-cni-plugin",
-            "podCidr": "192.168.{{groups['all'].index(inventory_hostname)}}.0/24"
+            "podCidr": "192.168.{{groups['all'].index(inventory_hostname)+1}}.0/24"
         }
     ]
 }
