@@ -1,0 +1,12 @@
+{
+    "name": "my-cni",
+    "cniVersion": "0.4.0",
+    "plugins": [
+        {
+            "name": "my-plugin",
+            "type": "my-cni-plugin",
+            "podCidr": "192.168.{{groups['all'].index(inventory_hostname)}}.0/24"
+        }
+    ]
+}
+
